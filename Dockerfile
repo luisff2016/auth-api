@@ -1,30 +1,31 @@
-# Stage 1: Build
-FROM ubuntu:latest AS build
+# syntax=docker/dockerfile:1
 
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk maven
+# Stage 1: Base
+# Use uma imagem Alpine como base
+FROM alpine:latest AS base
 
-# Variável para o diretório do aplicativo dentro do contêiner docker
-ARG APP_DIR=/app
+# Atualize os pacotes e instale o Java e o Maven
+RUN apk --no-cache update && \
+    apk --no-cache add openjdk17 maven
+WORKDIR /app
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN mvn -N io.takari:maven:wrapper
+RUN ./mvnw dependency:resolve
+COPY src ./src
 
-# Definir o diretório de trabalho
-WORKDIR $APP_DIR
+# Stage 2: Development
+FROM base as development
+CMD ["./mvnw", "spring-boot:run", "-Dspring-boot.run.profiles=postgres", "-Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000'"]
 
-COPY . .
+# Stage 3: Build
+#FROM base as build
+#RUN ./mvnw package
 
-RUN mvn clean
-
-#RUN mvn install
-
-# Stage 2: Runtime
-FROM openjdk:17
-
-# Definir o diretório de trabalho
-WORKDIR $APP_DIR
-
+# Stage 4: Production
+FROM alpine:latest as production
 EXPOSE 8080
+COPY --from=build /app/target/auth-0.0.1-SNAPSHOT.jar /auth.jar
+CMD ["java", "-Xshare:off", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/auth.jar"]
 
-COPY --from=build /target/auth-0.0.1-SNAPSHOT.jar auth.jar
 
-# Comando para executar a aplicação
-ENTRYPOINT ["java","-jar","auth.jar"]
