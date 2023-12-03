@@ -12,7 +12,9 @@ WORKDIR $APP_DIR
 
 COPY . .
 
-RUN mvn clean install
+RUN mvn clean
+
+RUN mvn install
 
 # Stage 2: Runtime
 FROM openjdk:17
