@@ -1,20 +1,28 @@
-# Usar uma imagem base do Java 17
-FROM openjdk:17-jdk-alpine
+# Stage 1: Build
+FROM ubuntu:latest AS build
+
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk maven
 
 # Variável para o diretório do aplicativo dentro do contêiner docker
-ARG APP_DIR=/usr/app/
-
-# Variável para o arquivo jar
-ARG JAR_FILE=target/auth-0.0.1-SNAPSHOT.jar
-
-# Criar diretório do aplicativo dentro do contêiner
-RUN mkdir -p $APP_DIR
+ARG APP_DIR=/app
 
 # Definir o diretório de trabalho
 WORKDIR $APP_DIR
 
-# Adicionar o arquivo jar ao contêiner
-ADD ${JAR_FILE} app.jar
+COPY . .
+
+RUN mvn clean install
+
+# Stage 2: Runtime
+FROM openjdk:17
+
+# Definir o diretório de trabalho
+WORKDIR $APP_DIR
+
+EXPOSE 8080
+
+COPY --from=build /app/target/auth-0.0.1-SNAPSHOT.jar auth.jar
 
 # Comando para executar a aplicação
-ENTRYPOINT ["java","-jar","/usr/app/app.jar"]
+ENTRYPOINT ["java","-jar","auth.jar"]
