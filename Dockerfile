@@ -14,7 +14,7 @@ COPY . .
 
 RUN mvn clean
 
-RUN mvn install
+#RUN mvn install
 
 # Stage 2: Runtime
 FROM openjdk:17
