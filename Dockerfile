@@ -24,7 +24,7 @@ WORKDIR $APP_DIR
 
 EXPOSE 8080
 
-COPY --from=build /app/target/auth-0.0.1-SNAPSHOT.jar auth.jar
+COPY --from=build /target/auth-0.0.1-SNAPSHOT.jar auth.jar
 
 # Comando para executar a aplicação
 ENTRYPOINT ["java","-jar","auth.jar"]
